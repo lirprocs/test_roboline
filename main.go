@@ -30,9 +30,10 @@ func crc8(data []byte) byte {
 
 func (d *data) parseMessage(mess []uint8) {
 	d.ctcResult = "Некорректно"
-	if len(mess) < 4 {
+	if ((d.functionCode == 0x01 || d.functionCode == 0x03) && len(mess) != 4) ||
+		((d.functionCode == 0x05 || d.functionCode == 0x06) && len(mess) != 5) {
 		d.result = [5]string{
-			"Ошибка: Некорректные формат данных",
+			"Ошибка: Некорректный формат данных",
 		}
 	} else {
 
@@ -93,23 +94,33 @@ func main() {
 		{0x01, 0x03, 0x01, 0x53},
 		{0x3A, 0x01, 0x10, 0x03},
 		{0xAB, 0x06, 0x4C, 0x13, 0xA8},
-		{0x0C, 0x05, 0x04, 0x00, 0x7C}}
+		{0x0C, 0x05, 0x04, 0x00, 0x7C},
+		{0x01, 0x01, 0x01, 0x01, 0x79},
+		{0x01, 0x06, 0x01, 0x01},
+		{0x01},
+		{0x01, 0x06},
+		{0x01, 0x06, 0x01}}
 
 	for _, v := range messages {
-		d = data{
-			deviceAddress: v[0],
-			functionCode:  v[1],
-			memoryAddress: v[2],
-			crc:           v[len(v)-1],
-		}
-
-		d.parseMessage(v)
-
-		for _, value := range d.result {
-			if value != "" {
-				fmt.Printf("%s\n", value)
+		if len(v) < 4 || len(v) > 5 {
+			fmt.Println("Ошибка: Некорректный формат данных")
+		} else {
+			d = data{
+				deviceAddress: v[0],
+				functionCode:  v[1],
+				memoryAddress: v[2],
+				crc:           v[len(v)-1],
 			}
+
+			d.parseMessage(v)
+
+			for _, value := range d.result {
+				if value != "" {
+					fmt.Printf("%s\n", value)
+				}
+			}
+			fmt.Println("")
 		}
-		fmt.Println("")
+
 	}
 }
